@@ -154,6 +154,7 @@ thread_local! {
 }
 
 thread_local! {
+    pub(super) static HAS_TRANSPORT: Cell<bool> = const { Cell::new(false) };
     pub(super) static SUPPRESS_EXTERNAL: Cell<bool> = const { Cell::new(false) };
 }
 
