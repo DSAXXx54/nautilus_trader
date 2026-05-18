@@ -692,6 +692,8 @@ mod tests {
             color: crate::enums::LogColor::Normal,
             component: ustr::Ustr::from("Test"),
             message: "error".to_string(),
+            strategy_id: None,
+            actor_id: None,
         };
         assert!(!writer.enabled(&error_line));
 
@@ -702,6 +704,8 @@ mod tests {
             color: crate::enums::LogColor::Normal,
             component: ustr::Ustr::from("Test"),
             message: "info".to_string(),
+            strategy_id: None,
+            actor_id: None,
         };
         assert!(writer.enabled(&info_line));
 
@@ -712,6 +716,8 @@ mod tests {
             color: crate::enums::LogColor::Normal,
             component: ustr::Ustr::from("Test"),
             message: "debug".to_string(),
+            strategy_id: None,
+            actor_id: None,
         };
         assert!(!writer.enabled(&debug_line));
     }
@@ -726,6 +732,8 @@ mod tests {
             color: crate::enums::LogColor::Normal,
             component: ustr::Ustr::from("Test"),
             message: "error".to_string(),
+            strategy_id: None,
+            actor_id: None,
         };
         assert!(writer.enabled(&error_line));
 
@@ -735,6 +743,8 @@ mod tests {
             color: crate::enums::LogColor::Normal,
             component: ustr::Ustr::from("Test"),
             message: "warn".to_string(),
+            strategy_id: None,
+            actor_id: None,
         };
         assert!(!writer.enabled(&warn_line));
     }

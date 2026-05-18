@@ -47,6 +47,8 @@ use crate::{
 const LOGGING: &str = "logging";
 const KV_COLOR: &str = "color";
 const KV_COMPONENT: &str = "component";
+const KV_STRATEGY_ID: &str = "strategy_id";
+const KV_ACTOR_ID: &str = "actor_id";
 
 /// Global log sender which allows multiple log guards per process.
 static LOGGER_TX: OnceLock<std::sync::mpsc::Sender<LogEvent>> = OnceLock::new();
@@ -91,6 +93,12 @@ pub struct LogLine {
     pub component: Ustr,
     /// The log message content.
     pub message: String,
+    /// Optional strategy identifier for correlating logs to a specific strategy instance.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub strategy_id: Option<Ustr>,
+    /// Optional actor identifier for correlating logs to a specific actor instance.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub actor_id: Option<Ustr>,
 }
 
 impl Display for LogLine {
@@ -194,6 +202,13 @@ impl Serialize for LogLineWrapper {
         json_obj.insert("color".to_string(), self.line.color.to_string());
         json_obj.insert("component".to_string(), self.line.component.to_string());
         json_obj.insert("message".to_string(), self.line.message.clone());
+        if let Some(ref sid) = self.line.strategy_id {
+            json_obj.insert("strategy_id".to_string(), sid.to_string());
+        }
+
+        if let Some(ref aid) = self.line.actor_id {
+            json_obj.insert("actor_id".to_string(), aid.to_string());
+        }
 
         json_obj.serialize(serializer)
     }
@@ -224,6 +239,12 @@ impl Log for Logger {
                 || Ustr::from(record.metadata().target()),
                 |v| Ustr::from(&v.to_string()),
             );
+            let strategy_id = key_values
+                .get(KV_STRATEGY_ID.into())
+                .map(|v| Ustr::from(&v.to_string()));
+            let actor_id = key_values
+                .get(KV_ACTOR_ID.into())
+                .map(|v| Ustr::from(&v.to_string()));
 
             let line = LogLine {
                 timestamp,
@@ -231,6 +252,8 @@ impl Log for Logger {
                 color,
                 component,
                 message: format!("{}", record.args()),
+                strategy_id,
+                actor_id,
             };
 
             if let Err(SendError(LogEvent::Log(line))) = self.tx.send(LogEvent::Log(line)) {
@@ -736,6 +759,8 @@ mod tests {
             color: LogColor::Normal,
             component: Ustr::from("Portfolio"),
             message: "This is a log message".to_string(),
+            strategy_id: None,
+            actor_id: None,
         };
 
         let serialized_json = serde_json::to_string(&log_message).unwrap();
@@ -820,6 +845,8 @@ mod tests {
             color: LogColor::Normal,
             component: Ustr::from("TestComponent"),
             message: "Test message".to_string(),
+            strategy_id: None,
+            actor_id: None,
         };
 
         let mut wrapper = LogLineWrapper::new(line, Ustr::from("TRADER-001"));
@@ -842,6 +869,8 @@ mod tests {
             color: LogColor::Green,
             component: Ustr::from("TestComponent"),
             message: "Test message".to_string(),
+            strategy_id: None,
+            actor_id: None,
         };
 
         let mut wrapper = LogLineWrapper::new(line, Ustr::from("TRADER-001"));
@@ -863,6 +892,8 @@ mod tests {
             color: LogColor::Yellow,
             component: Ustr::from("RiskEngine"),
             message: "Warning message".to_string(),
+            strategy_id: None,
+            actor_id: None,
         };
 
         let wrapper = LogLineWrapper::new(line, Ustr::from("TRADER-002"));
@@ -884,6 +915,8 @@ mod tests {
             color: LogColor::Normal,
             component: Ustr::from("Test"),
             message: "Cached".to_string(),
+            strategy_id: None,
+            actor_id: None,
         };
 
         let mut wrapper = LogLineWrapper::new(line, Ustr::from("TRADER"));
@@ -901,6 +934,8 @@ mod tests {
             color: LogColor::Red,
             component: Ustr::from("Component"),
             message: "Error occurred".to_string(),
+            strategy_id: None,
+            actor_id: None,
         };
 
         let display = format!("{line}");
